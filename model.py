@@ -1,12 +1,12 @@
 import pandas as pd
-#from sklearn.tree import DecisionTreeRegressor
-#from sklearn.metrics import mean_absolute_error
-#from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
 
 #read and clean data
 
 '''
-#most previus code (WITHOUT DRY principle)
+ most previus code (WITHOUT DRY principle)
 
 unique_cities = stores_data['city'].unique()
 city_map = {city: idx for idx, city in enumerate(unique_cities)}
@@ -20,16 +20,15 @@ unique_type = stores_data['type'].unique()
 type_map = {type: idx for idx, type in enumerate(unique_type)}
 stores_data['type'] = stores_data['type'].map(type_map)
 
+ Previous(hardcoded and unfinished)
+
+df = pd.read_csv('stores.csv')
+df = pd.read_csv('transactions.csv')
+df = pd.read_csv('train.csv')
 '''
 
+#present(simple , DRY and not hardcoded)
 
-# previous(hardcoded and unfinished)
-
-#df = pd.read_csv('stores.csv')
-#df = pd.read_csv('transactions.csv')
-#df = pd.read_csv('train.csv')
-
-#present(simple , DRY and finished?)
 def read_file(path, has_date=True):
     df = pd.read_csv(path).drop_duplicates()
     if has_date and 'date' in df.columns:
@@ -44,29 +43,31 @@ files = {
 
 data = {name: read_file(path, has_date) for name, (path, has_date) in files.items()}
 
-
 stores_data = data["stores_data"]
-
 #NEW code (WITH DRY principle)
 #a loop wich encodes string into numeric data
-for col in ['city', 'state', 'type']:
-    stores_data[col] = stores_data[col].map({val: i for i, val in enumerate(stores_data[col].unique())})
+for name, df in data.items():
+    for col in df.select_dtypes(include=["object"]).columns:
+        mapping = {val: i for i, val in enumerate(df[col].unique())}
+        df[col] = df[col].map(mapping)
 
+trainDf = data["train"].merge(data["stores_data"], on="store_nbr", how="left")
+trainDf['year'] = trainDf['date'].dt.year
+trainDf['month'] = trainDf['date'].dt.month
+trainDf['dayofweek'] = trainDf['date'].dt.dayofweek
 
-transa = data["transa"]
-train = data["train"]
-
-'''
-features = []
-X = features
-y = train['sales']
+X = trainDf.drop(columns=['sales', 'date'])
+y = trainDf['sales']
 train_X, val_X, train_y,val_y= train_test_split(X,y,random_state=0)
 
 #define model
-model = DecisionTreeRegressor 
+model = DecisionTreeRegressor(random_state=0)
 
 #fit and test model
+
+test = pd.read_csv('test.csv')
+
 model.fit(train_X, train_y)
 sales_predict = model.predict(val_X)
-print(mean_absolute_error(val_y,sales_predict))
-'''
+print(trainDf.info())
+#print(mean_absolute_error(val_y,test))
